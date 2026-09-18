@@ -4,61 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>🎧 Pick the next song</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --accent: #ff3d6e; --accent2: #ffd23f; }
+  :root {
+    --ink: #2b2620;
+    --paper: #f7ecd8;
+    --card: #fffaf1;
+    --card-line: #e7d8ba;
+    --red: #e8503a;
+    --red-dark: #c93f2c;
+    --yellow: #f2b134;
+    --muted: #8a7f6a;
+  }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; padding: 24px 16px 60px;
-    background: radial-gradient(circle at 50% 0%, #1b1b2c, #0b0b12 60%);
-    color: #f2f2f7; font-family: -apple-system, system-ui, "PingFang TC", sans-serif;
+    margin: 0; min-height: 100vh; padding: 28px 16px 60px;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(242,177,52,0.18), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(232,80,58,0.14), transparent 45%),
+      var(--paper);
+    color: var(--ink); font-family: "Nunito", -apple-system, system-ui, "PingFang TC", sans-serif;
   }
-  h1 { text-align: center; font-size: 1.4rem; margin: 8px 0 4px; }
-  .sub { text-align: center; color: #9a9ab0; font-size: 0.9rem; margin-bottom: 24px; }
+  h1 {
+    text-align: center; font-family: "Kalam", cursive; font-weight: 700;
+    font-size: 2rem; margin: 4px 0 6px; color: var(--ink);
+  }
+  .sub {
+    text-align: center; color: var(--muted); font-size: 0.95rem;
+    margin-bottom: 24px; max-width: 380px; margin-left: auto; margin-right: auto;
+    line-height: 1.45;
+  }
   .card {
-    max-width: 460px; margin: 0 auto; background: #15151f; border-radius: 20px;
-    padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); border: 1px solid #26263a;
+    max-width: 440px; margin: 0 auto; background: var(--card); border-radius: 22px;
+    padding: 22px; box-shadow: 0 10px 0 var(--card-line), 0 14px 30px rgba(43,38,32,0.12);
+    border: 2px solid var(--ink);
   }
   input[type=text], input[type=number] {
-    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #2c2c40;
-    background: #0f0f18; color: #fff; font-size: 1rem; margin-top: 6px;
+    width: 100%; padding: 13px 14px; border-radius: 12px; border: 2px solid var(--card-line);
+    background: #fff; color: var(--ink); font-size: 1rem; margin-top: 6px;
+    font-family: "Nunito", sans-serif; font-weight: 700;
   }
-  label { font-size: 0.85rem; color: #b8b8cc; font-weight: 600; display: block; margin-top: 18px; }
+  input[type=text]:focus, input[type=number]:focus { outline: none; border-color: var(--red); }
+  label {
+    font-size: 0.82rem; color: var(--muted); font-weight: 800; letter-spacing: 0.02em;
+    text-transform: uppercase; display: block; margin-top: 18px;
+  }
   button {
-    width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 1.05rem;
-    font-weight: 700; margin-top: 10px; cursor: pointer;
+    width: 100%; padding: 15px; border-radius: 14px; border: 2px solid var(--ink);
+    font-size: 1.05rem; font-weight: 800; margin-top: 10px; cursor: pointer;
+    font-family: "Nunito", sans-serif;
   }
-  #loadBtn { background: #2c2c40; color: #fff; }
-  #previewBtn { background: #26263a; color: var(--accent2); border: 1px solid #3a3a52; }
+  #loadBtn { background: #fff; color: var(--ink); }
+  #previewBtn { background: #fff; color: var(--red-dark); border-color: var(--card-line); }
   #payBtn {
-    background: linear-gradient(135deg, var(--accent), #ff7a3d); color: #fff;
-    font-size: 1.15rem; box-shadow: 0 6px 20px rgba(255,61,110,0.35);
+    background: var(--red); color: #fff; border-color: var(--red-dark);
+    font-size: 1.2rem; box-shadow: 0 4px 0 var(--red-dark);
   }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #payBtn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
   #deck { display: none; margin-top: 20px; }
   .vinyl {
-    width: 90px; height: 90px; border-radius: 50%; margin: 4px auto 14px;
-    background: repeating-radial-gradient(circle, #222 0 3px, #2c2c40 3px 6px);
-    border: 3px solid var(--accent2); position: relative;
+    width: 84px; height: 84px; border-radius: 50%; margin: 4px auto 14px;
+    background: repeating-radial-gradient(circle, #2b2620 0 3px, #4a4236 3px 6px);
+    border: 3px solid var(--yellow); position: relative;
     animation: spin 3s linear infinite; animation-play-state: paused;
   }
   .vinyl.spin { animation-play-state: running; }
   .vinyl::after {
     content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px;
-    background: #0b0b12; border-radius: 50%; transform: translate(-50%, -50%);
+    background: var(--card); border-radius: 50%; transform: translate(-50%, -50%);
   }
   @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
-  #ytplayer { width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+  #ytplayer { width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; border: 2px solid var(--ink); }
   .range-wrap { margin-top: 14px; }
-  input[type=range] { width: 100%; accent-color: var(--accent); }
-  .clip-label { text-align: center; font-size: 0.95rem; color: var(--accent2); margin-top: 8px; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--red); }
+  .clip-label { text-align: center; font-size: 1rem; color: var(--red-dark); margin-top: 8px; font-weight: 800; }
+  .clip-note { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
   .amount-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-  .amount-row span { font-size: 1.3rem; color: var(--accent2); }
-  #status { text-align: center; margin-top: 14px; font-size: 0.9rem; color: #ff8a8a; min-height: 1.2em; }
+  .amount-row span { font-size: 1.4rem; color: var(--red-dark); font-weight: 800; }
+  #status { text-align: center; margin-top: 14px; font-size: 0.9rem; color: var(--red-dark); min-height: 1.2em; font-weight: 700; }
 </style>
 </head>
 <body>
-  <h1>🎧 Donate, pick your clip</h1>
-  <div class="sub">Paste a YouTube link, choose where it starts — bigger donations get a longer clip (donate $100+ and it plays the whole thing).</div>
+  <h1>🎵 Scan, Pick a Song!</h1>
+  <div class="sub">Paste a YouTube link, choose where it starts, and donate to queue it up — the more you give, the longer your clip plays 🎶</div>
 
   <div class="card">
     <label for="url">YouTube link</label>
@@ -72,6 +103,7 @@
         <input id="startRange" type="range" min="0" max="0" value="0" step="1">
       </div>
       <div class="clip-label" id="clipLabel">--:-- → --:--</div>
+      <div class="clip-note" id="clipNote"></div>
       <button id="previewBtn">🔊 Preview 5s</button>
 
       <label for="amount">Your donation (AUD)</label>
@@ -131,13 +163,20 @@ function fmt(s) {
   return `${m}:${sec.toString().padStart(2,'0')}`;
 }
 
+// Deliberately no "$100 = no limit" promise here — a long clip only plays
+// in full if nobody else is queued behind it by the time it comes up
+// (the backend caps it to 3 min if someone's waiting), so the copy stays
+// honest about that instead of over-promising.
 function updateClipLabel() {
   const start = parseInt(document.getElementById('startRange').value, 10);
   const clipSeconds = currentClipSeconds();
+  const noteEl = document.getElementById('clipNote');
   if (clipSeconds >= 3600) {
-    document.getElementById('clipLabel').textContent = `${fmt(start)} → end of song`;
+    document.getElementById('clipLabel').textContent = `${fmt(start)} → plays till it's over 🎉`;
+    noteEl.textContent = "(if no one's queued after you — otherwise capped at 3 min)";
   } else {
     document.getElementById('clipLabel').textContent = `${fmt(start)} → ${fmt(Math.min(start + clipSeconds, duration))}`;
+    noteEl.textContent = '';
   }
 }
 
@@ -212,7 +251,7 @@ document.getElementById('payBtn').addEventListener('click', async () => {
 
   const payBtn = document.getElementById('payBtn');
   payBtn.disabled = true;
-  status.style.color = '#9a9ab0';
+  status.style.color = '#8a7f6a';
   status.textContent = 'Setting up payment…';
   try {
     const resp = await fetch(`${API_BASE}/busking/api/checkout`, {
@@ -228,7 +267,7 @@ document.getElementById('payBtn').addEventListener('click', async () => {
     if (!resp.ok) throw new Error(data.error || 'Something went wrong');
     window.location.href = data.checkout_url;
   } catch (err) {
-    status.style.color = '#ff8a8a';
+    status.style.color = '#c93f2c';
     status.textContent = err.message;
     payBtn.disabled = false;
   }
