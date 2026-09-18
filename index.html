@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🎧 Pick the next song</title>
+<title>Pick the next song</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
@@ -88,13 +88,13 @@
 </style>
 </head>
 <body>
-  <h1>🎵 Scan, Pick a Song!</h1>
-  <div class="sub">Paste a YouTube link, choose where it starts, and donate to queue it up — the more you give, the longer your clip plays 🎶</div>
+  <h1>Pick a Song!</h1>
+  <div class="sub">Paste a YouTube link, choose where it starts, and donate to queue it up — the more you give, the longer your clip plays.</div>
 
   <div class="card">
     <label for="url">YouTube link</label>
     <input id="url" type="text" placeholder="https://youtube.com/watch?v=...">
-    <button id="loadBtn">▶ Load track</button>
+    <button id="loadBtn">Load track</button>
 
     <div id="deck">
       <div class="vinyl" id="vinyl"></div>
@@ -104,7 +104,7 @@
       </div>
       <div class="clip-label" id="clipLabel">--:-- → --:--</div>
       <div class="clip-note" id="clipNote"></div>
-      <button id="previewBtn">🔊 Preview 5s</button>
+      <button id="previewBtn">Preview 5s</button>
 
       <label for="amount">Your donation (AUD)</label>
       <div class="amount-row">
@@ -112,7 +112,7 @@
         <input id="amount" type="number" min="2" max="100" step="1" value="3">
       </div>
 
-      <button id="payBtn">💸 Pay & queue my song</button>
+      <button id="payBtn">Pay & queue my song</button>
       <div id="status"></div>
     </div>
   </div>
@@ -172,7 +172,7 @@ function updateClipLabel() {
   const clipSeconds = currentClipSeconds();
   const noteEl = document.getElementById('clipNote');
   if (clipSeconds >= 3600) {
-    document.getElementById('clipLabel').textContent = `${fmt(start)} → plays till it's over 🎉`;
+    document.getElementById('clipLabel').textContent = `${fmt(start)} → plays till it's over`;
     noteEl.textContent = "(if no one's queued after you — otherwise capped at 3 min)";
   } else {
     document.getElementById('clipLabel').textContent = `${fmt(start)} → ${fmt(Math.min(start + clipSeconds, duration))}`;
