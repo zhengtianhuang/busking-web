@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎧 Pick the next song</title>
+<style>
+  :root { --accent: #ff3d6e; --accent2: #ffd23f; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 24px 16px 60px;
+    background: radial-gradient(circle at 50% 0%, #1b1b2c, #0b0b12 60%);
+    color: #f2f2f7; font-family: -apple-system, system-ui, "PingFang TC", sans-serif;
+  }
+  h1 { text-align: center; font-size: 1.4rem; margin: 8px 0 4px; }
+  .sub { text-align: center; color: #9a9ab0; font-size: 0.9rem; margin-bottom: 24px; }
+  .card {
+    max-width: 460px; margin: 0 auto; background: #15151f; border-radius: 20px;
+    padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); border: 1px solid #26263a;
+  }
+  input[type=text], input[type=number] {
+    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #2c2c40;
+    background: #0f0f18; color: #fff; font-size: 1rem; margin-top: 6px;
+  }
+  label { font-size: 0.85rem; color: #b8b8cc; font-weight: 600; display: block; margin-top: 18px; }
+  button {
+    width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 1.05rem;
+    font-weight: 700; margin-top: 10px; cursor: pointer;
+  }
+  #loadBtn { background: #2c2c40; color: #fff; }
+  #previewBtn { background: #26263a; color: var(--accent2); border: 1px solid #3a3a52; }
+  #payBtn {
+    background: linear-gradient(135deg, var(--accent), #ff7a3d); color: #fff;
+    font-size: 1.15rem; box-shadow: 0 6px 20px rgba(255,61,110,0.35);
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  #deck { display: none; margin-top: 20px; }
+  .vinyl {
+    width: 90px; height: 90px; border-radius: 50%; margin: 4px auto 14px;
+    background: repeating-radial-gradient(circle, #222 0 3px, #2c2c40 3px 6px);
+    border: 3px solid var(--accent2); position: relative;
+    animation: spin 3s linear infinite; animation-play-state: paused;
+  }
+  .vinyl.spin { animation-play-state: running; }
+  .vinyl::after {
+    content: ""; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px;
+    background: #0b0b12; border-radius: 50%; transform: translate(-50%, -50%);
+  }
+  @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+  #ytplayer { width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+  .range-wrap { margin-top: 14px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .clip-label { text-align: center; font-size: 0.95rem; color: var(--accent2); margin-top: 8px; font-weight: 600; }
+  .amount-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .amount-row span { font-size: 1.3rem; color: var(--accent2); }
+  #status { text-align: center; margin-top: 14px; font-size: 0.9rem; color: #ff8a8a; min-height: 1.2em; }
+</style>
+</head>
+<body>
+  <h1>🎧 Donate, pick your clip</h1>
+  <div class="sub">Paste a YouTube link, choose where it starts — bigger donations get a longer clip (donate $100+ and it plays the whole thing).</div>
+
+  <div class="card">
+    <label for="url">YouTube link</label>
+    <input id="url" type="text" placeholder="https://youtube.com/watch?v=...">
+    <button id="loadBtn">▶ Load track</button>
+
+    <div id="deck">
+      <div class="vinyl" id="vinyl"></div>
+      <div id="ytplayer"></div>
+      <div class="range-wrap">
+        <input id="startRange" type="range" min="0" max="0" value="0" step="1">
+      </div>
+      <div class="clip-label" id="clipLabel">--:-- → --:--</div>
+      <button id="previewBtn">🔊 Preview 5s</button>
+
+      <label for="amount">Your donation (AUD)</label>
+      <div class="amount-row">
+        <span>$</span>
+        <input id="amount" type="number" min="2" max="100" step="1" value="3">
+      </div>
+
+      <button id="payBtn">💸 Pay & queue my song</button>
+      <div id="status"></div>
+    </div>
+  </div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// This page is hosted on GitHub Pages (no ngrok browser-warning interstitial
+// for people scanning the QR code) but the actual backend still lives behind
+// ngrok — every API call below goes to the full ngrok URL with the
+// ngrok-skip-browser-warning header, which only works for XHR/fetch calls,
+// not for a top-level page load. That's the whole point of splitting the
+// page out from the API like this. Update this if the ngrok domain changes.
+const API_BASE = 'https://tomasa-vestigial-compositely.ngrok-free.dev';
+
+// Mirrors AMOUNT_TIER_CENTS / AMOUNT_TIER_SECONDS / UNCAPPED_CLIP_SECONDS in
+// busker/busking_bot.py — the server is authoritative, this is only for
+// showing an accurate preview before checkout. Keep both in sync by hand.
+const AMOUNT_TIER_CENTS = [900, 2000, 5000, 9999]; // 9999 so $100 itself (10000) falls through to uncapped
+const AMOUNT_TIER_SECONDS = [20, 30, 45, 90];
+const UNCAPPED_CLIP_SECONDS = 99999;
+
+function clipSecondsForAmount(amountCents) {
+  for (let i = 0; i < AMOUNT_TIER_CENTS.length; i++) {
+    if (amountCents <= AMOUNT_TIER_CENTS[i]) return AMOUNT_TIER_SECONDS[i];
+  }
+  return UNCAPPED_CLIP_SECONDS;
+}
+
+function currentClipSeconds() {
+  const amountDollars = parseFloat(document.getElementById('amount').value) || 0;
+  return clipSecondsForAmount(Math.round(amountDollars * 100));
+}
+
+let player = null;
+let duration = 0;
+let videoId = null;
+let previewTimer = null;
+
+function extractId(raw) {
+  raw = raw.trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+  const m = raw.match(/(?:youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function fmt(s) {
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function updateClipLabel() {
+  const start = parseInt(document.getElementById('startRange').value, 10);
+  const clipSeconds = currentClipSeconds();
+  if (clipSeconds >= 3600) {
+    document.getElementById('clipLabel').textContent = `${fmt(start)} → end of song`;
+  } else {
+    document.getElementById('clipLabel').textContent = `${fmt(start)} → ${fmt(Math.min(start + clipSeconds, duration))}`;
+  }
+}
+
+function updateRangeMax() {
+  const range = document.getElementById('startRange');
+  const clipSeconds = currentClipSeconds();
+  const maxStart = clipSeconds >= 3600
+    ? Math.max(0, Math.floor(duration - 1))
+    : Math.max(0, Math.floor(duration - clipSeconds));
+  const prevValue = parseInt(range.value, 10) || 0;
+  range.max = maxStart;
+  if (prevValue > maxStart) range.value = maxStart;
+  updateClipLabel();
+}
+
+let ytApiReady = false;
+window.onYouTubeIframeAPIReady = function() { ytApiReady = true; };
+
+document.getElementById('loadBtn').addEventListener('click', () => {
+  const id = extractId(document.getElementById('url').value);
+  const status = document.getElementById('status');
+  if (!id) { status.textContent = "Couldn't find a YouTube video in that link."; return; }
+  status.textContent = '';
+  videoId = id;
+  document.getElementById('deck').style.display = 'block';
+
+  const spawn = () => {
+    if (player) { player.loadVideoById(id); return; }
+    player = new YT.Player('ytplayer', {
+      videoId: id,
+      playerVars: { playsinline: 1, controls: 1 },
+      events: {
+        onReady: () => {
+          duration = player.getDuration() || 0;
+          document.getElementById('startRange').value = 0;
+          updateRangeMax();
+          player.pauseVideo();
+        },
+        onStateChange: (e) => {
+          document.getElementById('vinyl').classList.toggle('spin', e.data === YT.PlayerState.PLAYING);
+        }
+      }
+    });
+  };
+  if (ytApiReady) spawn(); else { const t = setInterval(() => { if (ytApiReady) { clearInterval(t); spawn(); } }, 150); }
+});
+
+document.getElementById('startRange').addEventListener('input', () => {
+  updateClipLabel();
+  if (player && player.seekTo) player.seekTo(parseInt(document.getElementById('startRange').value, 10), true);
+});
+
+document.getElementById('amount').addEventListener('input', () => {
+  if (player) updateRangeMax();
+});
+
+document.getElementById('previewBtn').addEventListener('click', () => {
+  if (!player) return;
+  clearTimeout(previewTimer);
+  const start = parseInt(document.getElementById('startRange').value, 10);
+  player.seekTo(start, true);
+  player.playVideo();
+  previewTimer = setTimeout(() => player.pauseVideo(), 5000);
+});
+
+document.getElementById('payBtn').addEventListener('click', async () => {
+  const status = document.getElementById('status');
+  if (!videoId) { status.textContent = 'Load a track first.'; return; }
+  const start = parseInt(document.getElementById('startRange').value, 10) || 0;
+  const amountDollars = parseFloat(document.getElementById('amount').value) || 0;
+  if (amountDollars < 2) { status.textContent = 'Minimum donation is $2.'; return; }
+
+  const payBtn = document.getElementById('payBtn');
+  payBtn.disabled = true;
+  status.style.color = '#9a9ab0';
+  status.textContent = 'Setting up payment…';
+  try {
+    const resp = await fetch(`${API_BASE}/busking/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify({
+        youtube_url: videoId,
+        start_seconds: start,
+        amount_cents: Math.round(amountDollars * 100),
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Something went wrong');
+    window.location.href = data.checkout_url;
+  } catch (err) {
+    status.style.color = '#ff8a8a';
+    status.textContent = err.message;
+    payBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
