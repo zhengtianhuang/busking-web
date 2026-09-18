@@ -87,13 +87,12 @@
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-// This page is hosted on GitHub Pages (no ngrok browser-warning interstitial
-// for people scanning the QR code) but the actual backend still lives behind
-// ngrok — every API call below goes to the full ngrok URL with the
-// ngrok-skip-browser-warning header, which only works for XHR/fetch calls,
-// not for a top-level page load. That's the whole point of splitting the
-// page out from the API like this. Update this if the ngrok domain changes.
-const API_BASE = 'https://tomasa-vestigial-compositely.ngrok-free.dev';
+// This page is hosted on GitHub Pages (fast, no tunnel-provider warning
+// interstitial for people scanning the QR code) but the actual backend
+// still lives behind a Cloudflare Quick Tunnel — update this if that URL
+// changes (it does whenever the cloudflared process restarts, since this
+// setup doesn't use a reserved domain).
+const API_BASE = 'https://fly-fancy-back-subscribers.trycloudflare.com';
 
 // Mirrors AMOUNT_TIER_CENTS / AMOUNT_TIER_SECONDS / UNCAPPED_CLIP_SECONDS in
 // busker/busking_bot.py — the server is authoritative, this is only for
